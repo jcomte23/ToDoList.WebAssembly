@@ -1,0 +1,103 @@
+@page "/tareas"
+@inject ToDoList.WebAssembly.Services.TareaService TareaService
+
+<PageTitle>ToDoList - Blazor WebAssembly</PageTitle>
+
+<div class="container mt-5">
+    <h1 class="mb-4">✅ ToDoList (Blazor WebAssembly)</h1>
+
+    <!-- Formulario para agregar nueva tarea -->
+    <div class="input-group mb-3">
+        <input type="text" class="form-control" placeholder="Nueva tarea..." @bind="nuevaDescripcion" />
+        <button class="btn btn-primary" @onclick="AgregarTarea">Agregar</button>
+    </div>
+
+    <!-- Lista de tareas -->
+    <ul class="list-group">
+        @foreach (var tarea in TareaService.ObtenerTodas())
+        {
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <input type="checkbox" class="form-check-input me-2" 
+                           checked="@tarea.Completada" 
+                           @onchange="(e) => ToggleCompletada(tarea)" />
+
+                    @if (tareaEditando?.Id == tarea.Id)
+                    {
+                        <!-- Modo edición -->
+                        <input type="text" class="form-control me-2" @bind="descripcionEditando" />
+                        <button class="btn btn-success btn-sm me-2" @onclick="GuardarEdicion">Guardar</button>
+                        <button class="btn btn-secondary btn-sm" @onclick="CancelarEdicion">Cancelar</button>
+                    }
+                    else
+                    {
+                        <!-- Modo normal -->
+                        <span class="@GetClaseTarea(tarea)">
+                            @tarea.Descripcion
+                        </span>
+                    }
+                </div>
+
+                <div>
+                    @if (tareaEditando?.Id != tarea.Id)
+                    {
+                        <button class="btn btn-warning btn-sm me-2" @onclick="() => EditarTarea(tarea)">Editar</button>
+                    }
+                    <button class="btn btn-danger btn-sm" @onclick="() => EliminarTarea(tarea.Id)">Eliminar</button>
+                </div>
+            </li>
+        }
+    </ul>
+</div>
+
+@code {
+    private string nuevaDescripcion = string.Empty;
+    private ToDoList.WebAssembly.Models.Tarea? tareaEditando;
+    private string descripcionEditando = string.Empty;
+
+    private void AgregarTarea()
+    {
+        if (!string.IsNullOrWhiteSpace(nuevaDescripcion))
+        {
+            TareaService.Agregar(nuevaDescripcion);
+            nuevaDescripcion = string.Empty;
+        }
+    }
+
+    private void EliminarTarea(Guid id)
+    {
+        TareaService.Eliminar(id);
+    }
+
+    private void ToggleCompletada(ToDoList.WebAssembly.Models.Tarea tarea)
+    {
+        TareaService.Actualizar(tarea.Id, tarea.Descripcion, !tarea.Completada);
+    }
+
+    private void EditarTarea(ToDoList.WebAssembly.Models.Tarea tarea)
+    {
+        tareaEditando = tarea;
+        descripcionEditando = tarea.Descripcion;
+    }
+
+    private void GuardarEdicion()
+    {
+        if (tareaEditando != null && !string.IsNullOrWhiteSpace(descripcionEditando))
+        {
+            TareaService.Actualizar(tareaEditando.Id, descripcionEditando, tareaEditando.Completada);
+            tareaEditando = null;
+            descripcionEditando = string.Empty;
+        }
+    }
+
+    private void CancelarEdicion()
+    {
+        tareaEditando = null;
+        descripcionEditando = string.Empty;
+    }
+
+    private string GetClaseTarea(ToDoList.WebAssembly.Models.Tarea tarea)
+    {
+        return tarea.Completada ? "text-decoration-line-through text-muted" : "";
+    }
+}
